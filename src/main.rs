@@ -3,6 +3,9 @@
 //! 业务逻辑（翻译引擎、Windows 取词/热键、配置）直接复用自 Flutter 版的 Rust 侧，
 //! 去掉了 flutter_rust_bridge 这一层；界面用 gpui-kit（GPUI Component）重画。
 
+// Release 构建时隐藏 Windows 控制台窗口（Debug 下保留，方便看日志）。
+#![cfg_attr(all(target_os = "windows", not(debug_assertions)), windows_subsystem = "windows")]
+
 mod app;
 mod config;
 mod selection;
@@ -10,7 +13,6 @@ mod settings_view;
 mod translate;
 mod tray;
 mod win;
-
 use gpui_kit::*;
 
 /// 从 GPUI 的 `Window` 里取出原生 HWND（Windows），交给 `win::window` 的裸 Win32 调用。

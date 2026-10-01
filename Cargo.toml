@@ -1,0 +1,38 @@
+[package]
+name = "stranslate_gpui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gpui-kit = "0.7"
+
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "1"
+reqwest = { version = "0.13", features = ["json", "blocking", "default-tls", "query", "system-proxy"] }
+hmac = "0.12"
+sha2 = "0.10"
+base64 = "0.22"
+hex = "0.4"
+uuid = { version = "1", features = ["v4"] }
+time = { version = "0.3", features = ["formatting", "macros"] }
+arboard = "3"
+dirs = "7"
+parking_lot = "0.12"
+urlencoding = "2"
+async-channel = "2"
+raw-window-handle = "0.6"
+
+[target.'cfg(windows)'.dependencies]
+tray-icon = "0.21"
+image = { version = "0.25", default-features = false, features = ["png"] }
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Threading",
+    "Win32_System_DataExchange",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_Graphics_Gdi",
+] }

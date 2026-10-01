@@ -29,8 +29,10 @@ pub enum SelectionKind {
 #[derive(Debug, Clone)]
 pub struct SelectionEvent {
     pub kind: SelectionKind,
-    /// 触发时的光标位置，Win32 物理像素（弹窗居中不依赖它）
+    /// 触发时的光标位置，Win32 物理像素。弹窗居中不依赖它，暂留给将来按位置弹窗用。
+    #[allow(dead_code)]
     pub x: i32,
+    #[allow(dead_code)]
     pub y: i32,
     /// 只有 Text 事件才有
     pub text: Option<String>,
@@ -80,11 +82,6 @@ pub fn set_enabled(enabled: bool) -> Result<(), String> {
         .ok_or_else(|| "划词内部错误：事件通道未初始化".to_string())?;
 
     input::start(sender, config.selection_auto_mouse)
-}
-
-/// 监听当前是否在跑。
-pub fn is_running() -> bool {
-    input::is_running()
 }
 
 /// 界面展示用的快捷键文本（改热键只需改 `win::input`）。

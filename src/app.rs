@@ -48,6 +48,9 @@ pub struct TranslateApp {
     /// 首帧是否已做完窗口收尾（挂 WS_EX_TOOLWINDOW）
     window_ready: bool,
 
+    /// 失焦自动隐藏的豁免截止时间：程序主动唤出窗口后短暂屏蔽，防激活抖动误隐藏
+    autohide_guard_until: Option<std::time::Instant>,
+
     _subs: Vec<Subscription>,
 }
 
@@ -129,6 +132,7 @@ impl TranslateApp {
             pinned: false,
             hwnd: None,
             window_ready: false,
+            autohide_guard_until: None,
             _subs: subs,
         }
     }
@@ -139,6 +143,15 @@ impl TranslateApp {
         if let SelectionKind::Text = event.kind {
             if let Some(text) = event.text {
                 if !text.trim().is_empty() {
+                    // 窗口可能已被失焦隐藏；隐藏状态下 GPUI 不重绘，render 里的
+                    // apply_source 永远跑不到，所以这里先用裸 HWND 直接唤出来，
+                    // 让 GPUI 恢复渲染，剩下的（填词 / 置前 / 翻译）交给 render。
+                    if let Some(hwnd) = self.hwnd {
+                        crate::win::window::show(hwnd);
+                    }
+                    // 刚唤出的瞬间可能有一次 WM_ACTIVATE 抖动，别让它马上又被隐藏。
+                    self.autohide_guard_until =
+                        Some(std::time::Instant::now() + std::time::Duration::from_millis(600));
                     self.apply_source = Some(text);
                     cx.notify();
                 }
@@ -470,6 +483,25 @@ impl Render for TranslateApp {
                 }
                 false
             });
+            // 失去焦点（点到别的窗口）就收进托盘；钉住时豁免，方便常驻对照。
+            let sub = cx.observe_window_activation(window, |this, window, _cx| {
+                if window.is_window_active() {
+                    return;
+                }
+                if this.pinned {
+                    return;
+                }
+                // 刚被程序主动唤出时，忽略这次失活抖动。
+                if let Some(until) = this.autohide_guard_until {
+                    if std::time::Instant::now() < until {
+                        return;
+                    }
+                }
+                if let Some(hwnd) = this.hwnd {
+                    crate::win::window::hide(hwnd);
+                }
+            });
+            self._subs.push(sub);
             self.window_ready = true;
         }
 

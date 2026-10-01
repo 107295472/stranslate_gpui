@@ -126,10 +126,6 @@ pub fn stop() {
     RUNNING.store(false, Ordering::SeqCst);
 }
 
-pub fn is_running() -> bool {
-    RUNNING.load(Ordering::SeqCst)
-}
-
 // ------------------------------------------------------------------ 监听线程
 
 fn input_thread(ready: Sender<Result<(), String>>, auto_mouse: bool) {

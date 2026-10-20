@@ -25,6 +25,8 @@ pub struct TranslateApp {
     langs: Vec<LangInfo>,
 
     input: Entity<TextareaState>,
+    /// 译文用只读 Textarea 显示（可选中 / 复制 / 滚动）
+    output: Entity<TextareaState>,
     from_select: LangSelect,
     to_select: LangSelect,
 
@@ -38,6 +40,9 @@ pub struct TranslateApp {
 
     /// 划词取到的文本，等下一帧 render 时塞进输入框并翻译（set_value 需要 Window）
     apply_source: Option<String>,
+
+    /// 待写入译文框的文本，等下一帧 render 时 set_value（同样需要 Window）
+    pending_output: Option<String>,
 
     settings: Option<Entity<Settings>>,
 
@@ -64,6 +69,7 @@ impl TranslateApp {
             TextareaState::new(window, cx)
                 .placeholder(format!("输入文字，或选中后按 {hotkey} 翻译"))
         });
+        let output = cx.new(|cx| TextareaState::new(window, cx).placeholder("译文"));
 
         let names: Vec<SharedString> = langs.iter().map(|l| l.name.clone().into()).collect();
         let from_idx = langs.iter().position(|l| l.id == config.from);
@@ -120,6 +126,7 @@ impl TranslateApp {
             config,
             langs,
             input,
+            output,
             from_select,
             to_select,
             result: String::new(),
@@ -128,6 +135,7 @@ impl TranslateApp {
             selection_error,
             hotkey,
             apply_source: None,
+            pending_output: None,
             settings: None,
             pinned: false,
             hwnd: None,
@@ -186,7 +194,8 @@ impl TranslateApp {
                 this.busy = false;
                 match outcome {
                     Ok(Ok(translated)) => {
-                        this.result = translated;
+                        this.result = translated.clone();
+                        this.pending_output = Some(translated);
                         this.error = None;
                     }
                     Ok(Err(e)) => this.error = Some(e),
@@ -437,7 +446,6 @@ impl TranslateApp {
                             .border_1()
                             .border_color(cx.theme().border)
                             .p_2()
-                            .overflow_y_scroll()
                             .child(self.render_output(cx)),
                     ),
                 ),
@@ -458,13 +466,10 @@ impl TranslateApp {
                 .child(err.clone())
                 .into_any_element();
         }
-        if self.result.is_empty() {
-            return div()
-                .text_color(cx.theme().muted_foreground)
-                .child("译文")
-                .into_any_element();
-        }
-        div().child(self.result.clone()).into_any_element()
+        Textarea::new(&self.output)
+            .h_full()
+            .readonly(true)
+            .into_any_element()
     }
 }
 
@@ -514,6 +519,12 @@ impl Render for TranslateApp {
             }
             window.activate_window();
             self.run_translation(text, cx);
+        }
+
+        // 新译文：写进只读的译文框。
+        if let Some(text) = self.pending_output.take() {
+            self.output
+                .update(cx, |s, cx| s.set_value(text, window, cx));
         }
 
         let body = if let Some(settings) = &self.settings {

@@ -33,7 +33,7 @@ fn main() {
         .run(move |cx| {
             gpui_kit::init(cx);
 
-            let bounds = Bounds::centered(None, size(px(460.), px(560.)), cx);
+            let bounds = Bounds::centered(None, size(px(660.), px(660.)), cx);
 
             let options = WindowOptions {
                 window_bounds: Some(WindowBounds::Windowed(bounds)),

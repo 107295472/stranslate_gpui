@@ -397,10 +397,10 @@ impl TranslateApp {
             })
             // 输入框
             .child(
-                div().flex_1().p_2().child(
+                div().p_2().child(
                     self.apply_font(
                         div()
-                            .size_full()
+                            .h(px(160.0))
                             .rounded(cx.theme().radius)
                             .border_1()
                             .border_color(cx.theme().border)

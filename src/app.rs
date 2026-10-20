@@ -309,8 +309,11 @@ impl TranslateApp {
     // ---------------------------------------------------------------- 界面
 
     fn apply_font<E: Styled>(&self, el: E) -> E {
+        // 行高按字号比例给（Textarea 内部的 Input 会把 line_height 定成 1.25rem 绝对值，
+        // 字号调大后必须一起覆盖，否则行高不跟着长）。
         let mut el = el
             .text_size(px(self.config.font_size as f32))
+            .line_height(relative(1.25))
             .font_weight(FontWeight(self.config.font_weight as f32));
         if !self.config.font_family.is_empty() {
             el = el.font_family(self.config.font_family.clone());
@@ -405,7 +408,13 @@ impl TranslateApp {
                             .border_1()
                             .border_color(cx.theme().border)
                             .p_2()
-                            .child(Textarea::new(&self.input).h_full()),
+                            // 字号必须直接设在 Textarea 上：Input 内部用 input_text_size()
+                            // 给输入区写了固定 text_sm()，外层容器的继承字号会被它覆盖。
+                            .child(
+                                self.apply_font(Textarea::new(&self.input))
+                                    .h_full()
+                                    .appearance(false),
+                            ),
                     ),
                 ),
             )
@@ -466,9 +475,10 @@ impl TranslateApp {
                 .child(err.clone())
                 .into_any_element();
         }
-        Textarea::new(&self.output)
+        self.apply_font(Textarea::new(&self.output))
             .h_full()
             .readonly(true)
+            .appearance(false)
             .into_any_element()
     }
 }
